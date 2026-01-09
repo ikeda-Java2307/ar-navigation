@@ -30,6 +30,6 @@ function setup() {
 
 function draw() {
     image(cam, 0, 0, width, height);
-	text(current.lat.toString(), 0, 0);
-	text(current.lon.toString(), 0, 10);
+	text(String(current.lat), 0, 0);
+	text(String(current.lon), 0, 10);
 }
