@@ -23,10 +23,14 @@ let font;
 let cam;
 let current = { lat: null, lon: null };
 let heading = 0;
+let pitch = 0;
+let pitchClamped = clamp(pitch, -45, 45);
 let uiType = "A";
 
 let targetIndex = 0;
 let targetPoint = route[targetIndex];
+
+let history = [];
 
 let nav_finished = false;
 
@@ -87,11 +91,12 @@ function draw() {
   resetMatrix();
   translate(0, 0, -500);
   
-  // texture(cam);
-  // plane(width, height);
+  noStroke();
+  texture(cam);
+  plane(width*2-150, height*2-150);
   // ortho(-width, width, -height, height);
   //image(cam, -width / 2, -height / 2, width, height);
-  image(cam, -width+80, -height+120, width * 1.5, height * 1.5);
+  // image(cam, -width+80, -height+120, width * 1.5, height * 1.5);
   
   pop();
 
@@ -174,8 +179,6 @@ function checkReach() {
 // ============================
 // 座標の平均化でブレを減らす
 // ============================
-
-let history = [];
 
 function smoothGPS(lat, lon) {
   history.push({ lat, lon });
@@ -276,8 +279,9 @@ function drawArrow3D(angle, d) {
   translate(0, -70, 100);
   cone(30, -50);*/
 /*
-   //旧3D矢印（矢印変な方向）
-    // 画面中央・少し奥
+  //旧3D矢印（矢印変な方向）
+  
+  // 画面中央・少し奥
   translate(0, 50, 100);
 
   // ① 進行方向（Y軸回転）
@@ -298,6 +302,8 @@ function drawArrow3D(angle, d) {
   cylinder(6, 40);
 */
   // 新3D矢印（スマホの縦方向追加）
+
+  resetMatrix();
   translate(0, 50, 100);
 
   // ① 進行方向（Y軸）
@@ -308,6 +314,7 @@ function drawArrow3D(angle, d) {
 
   ambientMaterial(255, 0, 0);
 
+  fill(255, 0, 0);
   cone(20, 40);
   translate(0, 30, 0);
   cylinder(6, 40);
@@ -336,6 +343,7 @@ window.addEventListener("deviceorientation", e => {
   if (e.webkitCompassHeading !== undefined) {
     // iOS（北基準・時計回り）
     heading = e.webkitCompassHeading;
+	// 縦方向
 	pitch = e.beta;
   } else if (e.alpha !== null) {
     // Android等
@@ -343,8 +351,6 @@ window.addEventListener("deviceorientation", e => {
 	pitch = e.beta;
   }
 });
-
-let pitchClamped = clamp(pitch, -45, 45);
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
