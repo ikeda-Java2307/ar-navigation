@@ -3,7 +3,7 @@
 // ============================
 
 // ターゲットまでのチェックポイント
-const route = [
+const route = [ // {lat: 37.52535707129404, lon: 138.91485761773126} // テスト
   { lat: 37.525151, lon: 138.914931 }, // P1スタート
   { lat: 37.525057, lon: 138.914556 }, // P2右折
   { lat: 37.525968, lon: 138.914143 }, // P3左折、手前を右折
@@ -19,6 +19,7 @@ const route = [
   { lat: 37.529012, lon: 138.907511 }  // P13ゴール
 ];
 
+let font;
 let cam;
 let current = { lat: null, lon: null };
 let heading = 0;
@@ -27,16 +28,23 @@ let uiType = "A";
 let targetIndex = 0;
 let targetPoint = route[targetIndex];
 
+let nav_finished = false;
+
 // ログ
 let startTime;
 let logs = [];
+
+function preload() {
+  font = loadFont("assets/static/NotoSansJP-Regular.ttf");
+}
 
 // ============================
 // 初期化
 // ============================
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(windowWidth, windowHeight, WEBGL);
+  textFont(font);
 
   // カメラ取得（ARの核）
   cam = createCapture({
@@ -71,7 +79,21 @@ function setup() {
 
 function draw() {
   // カメラ映像
-  image(cam, 0, 0, width, height);
+  // image(cam, 0, 0, width, height);
+  // push(); 
+  background(0);
+
+  push();
+  resetMatrix();
+  translate(0, 0, -500);
+  
+  // texture(cam);
+  // plane(width, height);
+  // ortho(-width, width, -height, height);
+  //image(cam, -width / 2, -height / 2, width, height);
+  image(cam, -width+80, -height+120, width * 1.5, height * 1.5);
+  
+  pop();
 
   if (current.lat === null) return;
 
@@ -87,9 +109,12 @@ function draw() {
 
   let d = checkReach(); // チェックポイントまでの距離を計算
 
-  drawUI(angle, d);
-
+  // drawUI(angle, d);
+  drawArrow3D(angle, d);
+  
   push();
+  resetMatrix(); 
+  translate(-width / 2, -height / 2)
   textAlign(LEFT, TOP)
   textSize(16);
   text(
@@ -115,28 +140,29 @@ function checkReach() {
     targetPoint.lat, targetPoint.lon
   );
 
-  targetIndex = 12; //テスト
+  // targetIndex = 12; // テスト
   if (d < 5) { // 5m以内
-	if (targetIndex == 12) {
-	  // push();
-	  translate(width / 2, height / 2);
+	if (targetIndex == 12) { //ゴールに到着
+	  push();
+	  // translate(width / 2, height / 2);
       textAlign(CENTER);
-      textSize(50);
+      textSize(25);
 	
-	  let string = "目的地に到着しました/nナビゲーションを終了します";
+	  let string = "目的地に到着しました\nナビゲーションを終了します";
 	  let padding = 10;
       let w = textWidth(string) + padding * 2;
       let h = 50;
+	  nav_finished = true;
 
       // 背景
       fill(0, 0, 0, 160); // 半透明黒
       noStroke();
-      rect(-w/2, 0, w, h, 8);
+      rect(-w/2, 40, w, 75, 8);
 
       // 文字
       fill(255);
-      text(string, 0, 50);
-	  // pop();
+      text(string, 0, 70);
+	  pop();
 	  return;
 	}
 	targetIndex++;
@@ -187,14 +213,14 @@ function distance(lat1, lng1, lat2, lng2) {
 
 function drawUI(angle, d) {
   push();
-  translate(width / 2, height / 2);
+  // translate(width, height);
   rotate(radians(angle));
   fill(255, 0, 0);
   triangle(0, -40, -20, 20, 20, 20);
   pop();
 
   push();
-  translate(width / 2, height / 2);
+  // translate(width, height);
   textAlign(CENTER);
   textSize(20);
   if (uiType === "B") {
@@ -203,30 +229,89 @@ function drawUI(angle, d) {
     let w = textWidth(string) + padding * 2;
     let h = 36;
 
-    // 背景
-    fill(0, 0, 0, 160); // 半透明黒
-    noStroke();
-    rect(-w/2, 34, w, h, 8);
+	if (nav_finished == false){
+      // 背景
+      fill(0, 0, 0, 160); // 半透明黒
+      noStroke();
+      rect(-w/2, 34, w, h, 8);
 
-    // 文字
-    fill(255);
-    text(string, 0, 60);
+      // 文字
+      fill(255);
+      text(string, 0, 60);
+	}
   }
   if (uiType === "C") {
-	let string = String(d) + "m まっすぐ";
-	let padding = 10;
-    let w = textWidth(string) + padding * 2;
-    let h = 36;
+	if (nav_finished == false){
+	  let string = String(d) + "m まっすぐ";
+	  let padding = 10;
+      let w = textWidth(string) + padding * 2;
+      let h = 36;
 
-    // 背景
-    fill(0, 0, 0, 160);
-    noStroke();
-    rect(-w/2, 34, w, h, 8);
+      // 背景
+      fill(0, 0, 0, 160);
+      noStroke();
+      rect(-w/2, 34, w, h, 8);
 
-    // 文字
-    fill(255);
-    text(string, 0, 60);
+      // 文字
+      fill(255);
+      text(string, 0, 60);
+	}
   }
+  pop();
+}
+
+function drawArrow3D(angle, d) {
+  push();/*  // 2D矢印
+  rotateZ(radians(angle));
+  normalMaterial();
+  ambientLight(150);
+  directionalLight(255, 255, 255, 0, 0, -1);
+
+  // 軸
+  fill(255, 0, 0);
+  box(20, 100, 20);
+
+  // 先端
+  fill(255, 0, 0);
+  translate(0, -70, 100);
+  cone(30, -50);*/
+/*
+   //旧3D矢印（矢印変な方向）
+    // 画面中央・少し奥
+  translate(0, 50, 100);
+
+  // ① 進行方向（Y軸回転）
+  rotateY(radians(angle));
+
+  // ② 見下ろし角度（X軸回転）
+  rotateX(radians(60));
+
+  // 色
+  ambientMaterial(255, 255, 0);
+
+  // 矢印先端
+  fill(255, 0, 0);
+  cone(20, -40);
+
+  // 矢印の軸
+  translate(0, 30, 0);
+  cylinder(6, 40);
+*/
+  // 新3D矢印（スマホの縦方向追加）
+  translate(0, 50, 100);
+
+  // ① 進行方向（Y軸）
+  rotateY(radians(angle));
+
+  // ② スマホの縦傾き → 見る角度
+  rotateX(radians(60 - pitchClamped));
+
+  ambientMaterial(255, 0, 0);
+
+  cone(20, 40);
+  translate(0, 30, 0);
+  cylinder(6, 40);
+
   pop();
 }
 
@@ -251,11 +336,19 @@ window.addEventListener("deviceorientation", e => {
   if (e.webkitCompassHeading !== undefined) {
     // iOS（北基準・時計回り）
     heading = e.webkitCompassHeading;
+	pitch = e.beta;
   } else if (e.alpha !== null) {
     // Android等
     heading = e.alpha;
+	pitch = e.beta;
   }
 });
+
+let pitchClamped = clamp(pitch, -45, 45);
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
 
 // iOS用：タップで許可
 function touchStarted() {
