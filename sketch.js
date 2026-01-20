@@ -24,7 +24,11 @@ let cam;
 let current = { lat: null, lon: null };
 let heading = 0;
 let pitch = 0;
-let pitchClamped = clamp(pitch, -45, 45);
+let test = 0;
+//let pitchClamped = pitch;
+//let pitchClamped = clamp(pitch, 45, 135);
+let pitchClamped = 0;
+
 let uiType = "A";
 
 let targetIndex = 0;
@@ -97,7 +101,13 @@ function draw() {
   // ortho(-width, width, -height, height);
   //image(cam, -width / 2, -height / 2, width, height);
   // image(cam, -width+80, -height+120, width * 1.5, height * 1.5);
-  
+/*
+  // 傾きデータを取得して回転（前後）
+  angleMode(DEGREES);
+  pitch = rotationX;
+  // (任意) 左右の傾きも追加
+  heading = rotationY;
+  */
   pop();
 
   if (current.lat === null) return;
@@ -114,7 +124,8 @@ function draw() {
 
   let d = checkReach(); // チェックポイントまでの距離を計算
 
-  // drawUI(angle, d);
+  drawUI(d);
+  drawCheckpointMarker(angle, d);
   drawArrow3D(angle, d);
   
   push();
@@ -127,6 +138,8 @@ function draw() {
   );
   text("target: " + target.toFixed(1), 0, 16);
   text("angle: " + angle.toFixed(1), 0, 32);
+  text("pitch: " + pitch.toFixed(1), 0, 48);
+  text("test: " + test.toFixed(1), 0, 64);
   pop();
 
   // 正しい方向を向いた判定
@@ -214,14 +227,7 @@ function distance(lat1, lng1, lat2, lng2) {
 // UI描画
 // ============================
 
-function drawUI(angle, d) {
-  push();
-  // translate(width, height);
-  rotate(radians(angle));
-  fill(255, 0, 0);
-  triangle(0, -40, -20, 20, 20, 20);
-  pop();
-
+function drawUI(d) {
   push();
   // translate(width, height);
   textAlign(CENTER);
@@ -236,16 +242,16 @@ function drawUI(angle, d) {
       // 背景
       fill(0, 0, 0, 160); // 半透明黒
       noStroke();
-      rect(-w/2, 34, w, h, 8);
+      rect(-w/2, 85, w, h, 8);
 
       // 文字
       fill(255);
-      text(string, 0, 60);
+      text(string, 0, 110);
 	}
   }
   if (uiType === "C") {
 	if (nav_finished == false){
-	  let string = String(d) + "m まっすぐ";
+	  let string = String(d) + "m 矢印方向";
 	  let padding = 10;
       let w = textWidth(string) + padding * 2;
       let h = 36;
@@ -253,11 +259,11 @@ function drawUI(angle, d) {
       // 背景
       fill(0, 0, 0, 160);
       noStroke();
-      rect(-w/2, 34, w, h, 8);
+      rect(-w/2, 85, w, h, 8);
 
       // 文字
       fill(255);
-      text(string, 0, 60);
+      text(string, 0, 110);
 	}
   }
   pop();
@@ -306,18 +312,55 @@ function drawArrow3D(angle, d) {
   resetMatrix();
   translate(0, 50, 100);
 
-  // ① 進行方向（Y軸）
-  rotateY(radians(angle));
-
-  // ② スマホの縦傾き → 見る角度
-  rotateX(radians(60 - pitchClamped));
-
+  // 進行方向（Y軸）
+  rotateY(radians(-angle));
+  // スマホの縦傾き → 見る角度
+  //rotateX(radians(180-pitch));
+  //pitchClamped = Math.max(45, Math.min(135, pitch));
+  //let flip = Math.sign(cos(radians(angle)));
+  //rotateX(radians(180-pitchClamped));
+  //rotateX(radians((180 - pitchClamped) * flip));
+  
+  ambientLight(100);
+  directionalLight(255, 255, 255, 0, 0, -1);
   ambientMaterial(255, 0, 0);
 
   fill(255, 0, 0);
-  cone(20, 40);
-  translate(0, 30, 0);
-  cylinder(6, 40);
+  noStroke();
+  rotateX(radians(90));
+  translate(0, -10, 0)
+  cone(20, -40);
+  translate(0, 40, 0);
+  cylinder(8, -50);
+
+  pop();
+}
+
+// チェックポイント目印
+function drawCheckpointMarker(angle, distance) {
+  // 背面を非表示
+  if (cos(radians(angle)) <= 0) return;
+
+  // 距離で奥行きを決める（疑似AR）
+  let z = map(distance, 5, 50, -150, -500);
+  z = constrain(z, -800, -150);
+  //let size = map(distance, 5, 50, 60, 20);
+
+  push();
+  resetMatrix();
+  // 方角
+  rotateY(radians(-angle));
+  // 見下ろし
+  //rotateX(radians(60));
+  translate(0, 0, z);
+
+  // 視認性
+  noStroke();
+  ambientLight(120);
+  directionalLight(255, 255, 255, 0, 0, -1);
+
+  ambientMaterial(0, 150, 255);
+  sphere(20);
 
   pop();
 }
@@ -352,15 +395,16 @@ window.addEventListener("deviceorientation", e => {
   }
 });
 
-function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v));
-}
-
 // iOS用：タップで許可
 function touchStarted() {
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
     DeviceOrientationEvent.requestPermission();
   }
+}
+
+function clamp(v, min, max) {
+  let result = Math.max(min, Math.min(max, v));
+  return result;
 }
 
 // ============================
