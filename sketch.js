@@ -3,9 +3,9 @@
 // ============================
 
 // ターゲットまでのチェックポイント
-const route = [ //{lat: 37.52535707129404, lon: 138.91485761773126} // テスト
+const route = [ //{lat: 37.525229, lon: 138.914889} // テスト
   { lat: 37.525151, lon: 138.914931 }, // P1スタート
-/*  { lat: 37.525057, lon: 138.914556 }, // P2右折
+  { lat: 37.525057, lon: 138.914556 }, // P2右折
   { lat: 37.525968, lon: 138.914143 }, // P3左折、手前を右折
   { lat: 37.526117, lon: 138.913971 }, // P4直進
   { lat: 37.527302, lon: 138.913971 }, // P5左折
@@ -17,7 +17,6 @@ const route = [ //{lat: 37.52535707129404, lon: 138.91485761773126} // テスト
   { lat: 37.529540, lon: 138.909088 }, // P11直進
   { lat: 37.529757, lon: 138.908874 }, // P12左折
   { lat: 37.529012, lon: 138.907511 }  // P13ゴール
-  */
 ];
 
 let font;
@@ -26,8 +25,6 @@ let current = { lat: null, lon: null };
 let heading = 0;
 let pitch = 0;
 let test = 0;
-//let pitchClamped = pitch;
-//let pitchClamped = clamp(pitch, 45, 135);
 let pitchClamped = 0;
 
 let uiType = "A";
@@ -42,6 +39,7 @@ let nav_finished = false;
 // ログ
 let startTime;
 let logs = [];
+let error = 0;
 
 function preload() {
   font = loadFont("assets/static/NotoSansJP-Regular.ttf");
@@ -121,13 +119,12 @@ function draw() {
   );
 
   let angle = target - heading;
-  let error = abs(angle);
+  error = abs(angle);
 
   let d = checkReach(); // チェックポイントまでの距離を計算
 
-  drawUI(d);
-  drawCheckpointMarker(angle, d);
-  drawArrow3D(angle, d);
+  drawUI(angle, d);
+  drawArrow3D(angle);
   
   push();
   resetMatrix(); 
@@ -142,11 +139,6 @@ function draw() {
   text("pitch: " + pitch.toFixed(1), 0, 48);
   text("test: " + test.toFixed(1), 0, 64);
   pop();
-
-  // 正しい方向を向いた判定
-  if (error < 10) {
-    recordResult(error);
-  }
 }
 
 // ============================
@@ -159,7 +151,7 @@ function checkReach() {
     targetPoint.lat, targetPoint.lon
   );
 
-  targetIndex = 13; // テスト
+  //targetIndex = 13; // テスト
   if (d < 5) { // 5m以内
 	if (targetIndex+1 == 14) { //ゴールに到着
 	  push();
@@ -186,6 +178,10 @@ function checkReach() {
 	}
 	targetIndex++;
     targetPoint = route[targetIndex];
+	// 正しい方向を向いた判定
+    if (error < 10) {
+      recordResult(error);
+    }
   }
   return d;
 }
@@ -228,26 +224,18 @@ function distance(lat1, lng1, lat2, lng2) {
 // UI描画
 // ============================
 
-function drawUI(d) {
+function drawUI(angle, d) {
   push();
-  // translate(width, height);
   textAlign(CENTER);
   textSize(20);
   if (uiType === "B") {
-	let string = String(d) + "m";
-	let padding = 10;
-    let w = textWidth(string) + padding * 2;
-    let h = 36;
-
 	if (nav_finished == false){
-      // 背景
-      fill(0, 0, 0, 160); // 半透明黒
-      noStroke();
-      rect(-w/2, 85, w, h, 8);
+	  let string = String(d) + "m";
+	  let padding = 10;
+      let w = textWidth(string) + padding * 2;
+      let h = 36;
 
-      // 文字
-      fill(255);
-      text(string, 0, 110);
+      textBox(w, h, string);
 	}
   }
   if (uiType === "C") {
@@ -257,70 +245,47 @@ function drawUI(d) {
       let w = textWidth(string) + padding * 2;
       let h = 36;
 
-      // 背景
-      fill(0, 0, 0, 160);
-      noStroke();
-      rect(-w/2, 85, w, h, 8);
+      textBox(w, h, string);
+	}
+  }
+  if (uiType === "D") {
+	if (nav_finished == false){
+	  drawCheckpointMarker(angle, d);
+	}
+  }
+  if (uiType === "E") {
+	if (nav_finished == false){
+	  let string = String(d) + "m 矢印方向";
+	  let padding = 10;
+      let w = textWidth(string) + padding * 2;
+      let h = 36;
 
-      // 文字
-      fill(255);
-      text(string, 0, 110);
+      textBox(w, h, string);
+	  drawCheckpointMarker(angle, d);
 	}
   }
   pop();
 }
 
-function drawArrow3D(angle, d) {
-  push();/*  // 2D矢印
-  rotateZ(radians(angle));
-  normalMaterial();
-  ambientLight(150);
-  directionalLight(255, 255, 255, 0, 0, -1);
+function textBox(w, h, string) {
+  // 背景
+  fill(0, 0, 0, 160);
+  noStroke();
+  rect(-w/2, 85, w, h, 8);
 
-  // 軸
-  fill(255, 0, 0);
-  box(20, 100, 20);
+  // 文字
+  fill(255);
+  text(string, 0, 110);
+}
 
-  // 先端
-  fill(255, 0, 0);
-  translate(0, -70, 100);
-  cone(30, -50);*/
-/*
-  //旧3D矢印（矢印変な方向）
-  
-  // 画面中央・少し奥
-  translate(0, 50, 100);
-
-  // ① 進行方向（Y軸回転）
-  rotateY(radians(angle));
-
-  // ② 見下ろし角度（X軸回転）
-  rotateX(radians(60));
-
-  // 色
-  ambientMaterial(255, 255, 0);
-
-  // 矢印先端
-  fill(255, 0, 0);
-  cone(20, -40);
-
-  // 矢印の軸
-  translate(0, 30, 0);
-  cylinder(6, 40);
-*/
-  // 新3D矢印（スマホの縦方向追加）
+function drawArrow3D(angle) { // 3D矢印
+  push();
 
   resetMatrix();
   translate(0, 50, 100);
 
   // 進行方向（Y軸）
   rotateY(radians(-angle));
-  // スマホの縦傾き → 見る角度
-  //rotateX(radians(180-pitch));
-  //pitchClamped = Math.max(45, Math.min(135, pitch));
-  //let flip = Math.sign(cos(radians(angle)));
-  //rotateX(radians(180-pitchClamped));
-  //rotateX(radians((180 - pitchClamped) * flip));
   
   ambientLight(100);
   directionalLight(255, 255, 255, 0, 0, -1);
@@ -345,7 +310,7 @@ function drawCheckpointMarker(angle, distance) {
   // 距離で奥行きを決める（疑似AR）
   let z = map(distance, 5, 50, -150, -500);
   z = constrain(z, -800, -150);
-  //let size = map(distance, 5, 50, 60, 20);
+  let size = map(distance, 5, 50, 60, 20);
 
   push();
   resetMatrix();
@@ -361,7 +326,7 @@ function drawCheckpointMarker(angle, distance) {
   directionalLight(255, 255, 255, 0, 0, -1);
 
   ambientMaterial(0, 150, 255);
-  sphere(20);
+  sphere(size);
 
   pop();
 }
@@ -414,12 +379,12 @@ function clamp(v, min, max) {
 
 function recordResult(error) {
   let time = millis() - startTime;
-  logs.push(`${uiType},${time},${error.toFixed(1)}`);
+  logs.push(`${targetIndex},${uiType},${time},${error.toFixed(1)}`);
   startTime = millis(); // 次試行用
 }
 
 function downloadCSV() {
-  let csv = "UI,Time(ms),Error(deg)\n" + logs.join("\n");
+  let csv = "targetIndex, UI,Time(ms),Error(deg)\n" + logs.join("\n");
   let blob = new Blob([csv], { type: "text/csv" });
   let a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
