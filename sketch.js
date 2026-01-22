@@ -23,9 +23,9 @@ let font;
 let cam;
 let current = { lat: null, lon: null };
 let heading = 0;
-let pitch = 0;
-let test = 0;
-let pitchClamped = 0;
+// let pitch = 0;
+// let test = 0;
+// let pitchClamped = 0;
 
 let uiType = "A";
 
@@ -136,8 +136,8 @@ function draw() {
   );
   text("target: " + target.toFixed(1), 0, 16);
   text("angle: " + angle.toFixed(1), 0, 32);
-  text("pitch: " + pitch.toFixed(1), 0, 48);
-  text("test: " + test.toFixed(1), 0, 64);
+  // text("pitch: " + pitch.toFixed(1), 0, 48);
+  // text("test: " + test.toFixed(1), 0, 64);
   pop();
 }
 
@@ -302,7 +302,7 @@ function drawArrow3D(angle) { // 3D矢印
   pop();
 }
 
-// チェックポイント目印
+// チェックポイント目印球体
 function drawCheckpointMarker(angle, distance) {
   // 背面を非表示
   if (cos(radians(angle)) <= 0) return;
@@ -353,11 +353,11 @@ window.addEventListener("deviceorientation", e => {
     // iOS（北基準・時計回り）
     heading = e.webkitCompassHeading;
 	// 縦方向
-	pitch = e.beta;
+	// pitch = e.beta;
   } else if (e.alpha !== null) {
     // Android等
     heading = e.alpha;
-	pitch = e.beta;
+	// pitch = e.beta;
   }
 });
 
@@ -367,16 +367,16 @@ function touchStarted() {
     DeviceOrientationEvent.requestPermission();
   }
 }
-
+/*
 function clamp(v, min, max) {
   let result = Math.max(min, Math.min(max, v));
   return result;
-}
+}*/
 
 // ============================
 // ログ記録・CSV出力
 // ============================
-
+/*
 function recordResult(error) {
   let time = millis() - startTime;
   logs.push(`${targetIndex},${uiType},${time},${error.toFixed(1)}`);
@@ -390,4 +390,4 @@ function downloadCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = "result.csv";
   a.click();
-}
+}*/
